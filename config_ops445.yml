@@ -1,0 +1,43 @@
+---
+- hosts: myvmlab
+  gather_facts: no   # Skip fact gathering to avoid Python 2 issues
+  user: student
+  become: yes
+  vars:
+    seneca_id: eroshy   # Replace with your actual Seneca ID
+    ops445_dir: "/home/{{ seneca_id }}/ops445"
+
+  tasks:
+    - name: Update Apache (httpd)
+      raw: "sudo systemctl restart httpd || echo 'Apache not installed, skipping'"
+
+    - name: Install EPEL repository
+      raw: "sudo yum install -y epel-release || echo 'EPEL already installed or repo failed'"
+
+    - name: Remove tree package if exists
+      raw: "sudo yum remove -y tree || echo 'tree not installed, skipping'"
+
+    - name: Set hostname to Seneca ID
+      raw: "sudo hostnamectl set-hostname {{ seneca_id }}"
+
+    - name: Create new user with sudo access
+      raw: "sudo useradd -m -s /bin/bash -G wheel {{ seneca_id }} || echo 'User exists'"
+
+    - name: Allow passwordless sudo for new user
+      raw: "echo '{{ seneca_id }} ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/{{ seneca_id }}"
+
+    - name: Setup SSH key for new user
+      raw: |
+        sudo mkdir -p /home/{{ seneca_id }}/.ssh
+        sudo cp /home/student/.ssh/authorized_keys /home/{{ seneca_id }}/.ssh/
+        sudo chown -R {{ seneca_id }}:{{ seneca_id }} /home/{{ seneca_id }}/.ssh
+        sudo chmod 700 /home/{{ seneca_id }}/.ssh
+        sudo chmod 600 /home/{{ seneca_id }}/.ssh/authorized_keys
+
+    - name: Create OPS445 lab directories
+      raw: |
+        for i in {1..8}; do
+          sudo mkdir -p {{ ops445_dir }}/lab$i
+          sudo chown -R {{ seneca_id }}:{{ seneca_id }} {{ ops445_dir }}/lab$i
+        done
+
