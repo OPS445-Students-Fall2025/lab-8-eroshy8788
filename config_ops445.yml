@@ -1,43 +1,65 @@
 ---
-- hosts: myvmlab
-  gather_facts: no   # Skip fact gathering to avoid Python 2 issues
-  user: student
+- name: Configure OPS445 VM
+  hosts: lab8
   become: yes
   vars:
-    seneca_id: eroshy   # Replace with your actual Seneca ID
-    ops445_dir: "/home/{{ seneca_id }}/ops445"
-
+    seneca_id: "eroshy"
   tasks:
-    - name: Update Apache (httpd)
-      raw: "sudo systemctl restart httpd || echo 'Apache not installed, skipping'"
+    - name: Update Apache (skip repos if broken)
+      yum:
+        name: httpd
+        state: latest
+      ignore_errors: yes
 
-    - name: Install EPEL repository
-      raw: "sudo yum install -y epel-release || echo 'EPEL already installed or repo failed'"
+    - name: Install EPEL if available
+      yum:
+        name: epel-release
+        state: present
+      ignore_errors: yes
 
-    - name: Remove tree package if exists
-      raw: "sudo yum remove -y tree || echo 'tree not installed, skipping'"
+    - name: Remove tree package
+      yum:
+        name: tree
+        state: absent
+      ignore_errors: yes
 
-    - name: Set hostname to Seneca ID
-      raw: "sudo hostnamectl set-hostname {{ seneca_id }}"
+    - name: Set hostname to eroshy
+      hostname:
+        name: "{eroshy}"
 
-    - name: Create new user with sudo access
-      raw: "sudo useradd -m -s /bin/bash -G wheel {{ seneca_id }} || echo 'User exists'"
+    - name: Create Seneca user with sudo
+      user:
+        name: "{eroshy}"
+        groups: wheel
+        append: yes
+        create_home: yes
+        shell: /bin/bash
 
-    - name: Allow passwordless sudo for new user
-      raw: "echo '{{ seneca_id }} ALL=(ALL) NOPASSWD:ALL' | sudo tee /etc/sudoers.d/{{ seneca_id }}"
+    - name: Copy SSH key to new user
+      authorized_key:
+        user: "{eroshy}"
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/ops445.pub') }}"
 
-    - name: Setup SSH key for new user
-      raw: |
-        sudo mkdir -p /home/{{ seneca_id }}/.ssh
-        sudo cp /home/student/.ssh/authorized_keys /home/{{ seneca_id }}/.ssh/
-        sudo chown -R {{ seneca_id }}:{{ seneca_id }} /home/{{ seneca_id }}/.ssh
-        sudo chmod 700 /home/{{ seneca_id }}/.ssh
-        sudo chmod 600 /home/{{ seneca_id }}/.ssh/authorized_keys
+    - name: Ensure sudoers allows wheel NOPASSWD
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^%wheel\s+ALL=\(ALL\)\s+NOPASSWD:'
+        line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'
 
-    - name: Create OPS445 lab directories
-      raw: |
-        for i in {1..8}; do
-          sudo mkdir -p {{ ops445_dir }}/lab$i
-          sudo chown -R {{ seneca_id }}:{{ seneca_id }} {{ ops445_dir }}/lab$i
-        done
-
+    - name: Create ops445 lab directory structure
+      file:
+        path: "/home/eroshy/ops445/lab8"
+        state: directory
+        owner: "eroshy"
+        group: "eroshy"
+      loop:
+        - 1
+        - 2
+        - 3
+        - 4
+        - 5
+        - 6
+        - 7
+        - 8
