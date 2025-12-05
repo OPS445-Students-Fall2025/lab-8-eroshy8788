@@ -1,30 +1,22 @@
 
-PLAY [myvmlab] *****************************************************************
+PLAY [Configure OPS445 VM] *****************************************************
 
-TASK [Update Apache (httpd)] ***************************************************
-changed: [myvm]
+TASK [Gathering Facts] *********************************************************
+ok: [centos-vm]
 
-TASK [Install EPEL repository] *************************************************
-changed: [myvm]
+TASK [Update Apache (skip repos if broken)] ************************************
+fatal: [centos-vm]: FAILED! => {"changed": false, "msg": "Could not retrieve mirrorlist http://mirrorlist.centos.org?arch=x86_64&release=7&repo=sclo-rh error was\n14: curl#6 - \"Could not resolve host: mirrorlist.centos.org; Unknown error\"\n\n\n One of the configured repositories failed (Unknown),\n and yum doesn't have enough cached data to continue. At this point the only\n safe thing yum can do is fail. There are a few ways to work \"fix\" this:\n\n     1. Contact the upstream for the repository and get them to fix the problem.\n\n     2. Reconfigure the baseurl/etc. for the repository, to point to a working\n        upstream. This is most often useful if you are using a newer\n        distribution release than is supported by the repository (and the\n        packages for the previous distribution release still work).\n\n     3. Run the command with the repository temporarily disabled\n            yum --disablerepo=<repoid> ...\n\n     4. Disable the repository permanently, so yum won't use it by default. Yum\n        will then just ignore the repository until you permanently enable it\n        again or use --enablerepo for temporary usage:\n\n            yum-config-manager --disable <repoid>\n        or\n            subscription-manager repos --disable=<repoid>\n\n     5. Configure the failing repository to be skipped, if it is unavailable.\n        Note that yum will try to contact the repo. when it runs most commands,\n        so will have to try and fail each time (and thus. yum will be be much\n        slower). If it is a very temporary problem though, this is often a nice\n        compromise:\n\n            yum-config-manager --save --setopt=<repoid>.skip_if_unavailable=true\n\nCannot find a valid baseurl for repo: centos-sclo-rh/x86_64\n", "rc": 1, "results": []}
+...ignoring
 
-TASK [Remove tree package if exists] *******************************************
-changed: [myvm]
+TASK [Install EPEL if available] ***********************************************
+ok: [centos-vm]
 
-TASK [Set hostname to Seneca ID] ***********************************************
-changed: [myvm]
+TASK [Remove tree package] *****************************************************
+ok: [centos-vm]
 
-TASK [Create new user with sudo access] ****************************************
-changed: [myvm]
-
-TASK [Allow passwordless sudo for new user] ************************************
-changed: [myvm]
-
-TASK [Setup SSH key for new user] **********************************************
-changed: [myvm]
-
-TASK [Create OPS445 lab directories] *******************************************
-changed: [myvm]
+TASK [Set hostname to eroshy] **************************************************
+fatal: [centos-vm]: FAILED! => {"changed": false, "msg": "Command failed rc=1, out=, err=Could not set property: Invalid hostname '{eroshy}'\n"}
 
 PLAY RECAP *********************************************************************
-myvm                       : ok=8    changed=8    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+centos-vm                  : ok=4    changed=0    unreachable=0    failed=1    skipped=0    rescued=0    ignored=1   
 
